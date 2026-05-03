@@ -1,0 +1,59 @@
+server:
+  port: ${SERVER_PORT}
+
+spring:
+  application:
+    name: ${PROJECT_NAME}
+  cache:
+    type: redis
+    redis:
+      time-to-live: ${REDIS_CACHE_TTL}
+      cache-null-values: false
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+  datasource:
+    url: jdbc:sqlserver://${DB_HOST}:${DB_PORT};databaseName=${DB_NAME};encrypt=${DB_ENCRYPT};trustServerCertificate=${DB_TRUST_SERVER_CERTIFICATE}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+  jpa:
+    database-platform: org.hibernate.dialect.SQLServerDialect
+    hibernate:
+      ddl-auto: none
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: ${PROJECT_NAME}
+
+transactions:
+  daily-withdrawal-limit: ${DAILY_WITHDRAWAL_LIMIT:1000}
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{requestId:-no-request}] [%X{method:-} %X{path:-}] [%X{deviceIp:-unknown-ip}] %logger{36} - %msg%n"
+  level:
+    com.bancofortaleza.transactions: ${LOG_LEVEL_APP}
+    org.springframework.web: ${LOG_LEVEL_SPRING_WEB}

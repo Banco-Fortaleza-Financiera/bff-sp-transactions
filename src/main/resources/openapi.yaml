@@ -1,0 +1,440 @@
+openapi: 3.0.3
+info:
+  title: BFF OpenAPI Support Transaction
+  version: 1.0.0
+  description: API for transaction management.
+  contact:
+    name: Banco Fortaleza Financiera
+
+servers:
+  - url: /
+    description: Default server.
+
+tags:
+  - name: Transactions
+    description: Operations related to bank account transactions.
+
+paths:
+  /support/v1/transactions:
+    get:
+      tags:
+        - Transactions
+      summary: List transactions
+      description: Retrieves bank account transactions using the submitted filters when provided.
+      operationId: listTransactions
+      parameters:
+        - $ref: '#/components/parameters/XDeviceIpHeader'
+        - $ref: '#/components/parameters/XSessionHeader'
+        - $ref: '#/components/parameters/XUserIdHeader'
+        - $ref: '#/components/parameters/XPageHeader'
+        - $ref: '#/components/parameters/XPageSizeHeader'
+        - $ref: '#/components/parameters/SearchQuery'
+        - $ref: '#/components/parameters/IdAccountQuery'
+        - $ref: '#/components/parameters/ConceptQuery'
+        - $ref: '#/components/parameters/StatusQuery'
+      responses:
+        '200':
+          description: Transactions retrieved successfully.
+          headers:
+            x-total-count:
+              $ref: '#/components/headers/XTotalCount'
+            x-page:
+              $ref: '#/components/headers/XPage'
+            x-page-size:
+              $ref: '#/components/headers/XPageSize'
+            x-total-pages:
+              $ref: '#/components/headers/XTotalPages'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TransactionResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - Transactions
+      summary: Create transaction
+      description: Creates a bank account transaction with the requested account, amount, description, concept and status.
+      operationId: createTransaction
+      parameters:
+        - $ref: '#/components/parameters/XDeviceIpHeader'
+        - $ref: '#/components/parameters/XSessionHeader'
+        - $ref: '#/components/parameters/XUserIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionCreateRequest'
+      responses:
+        '201':
+          description: Transaction created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /support/v1/transactions/{id}:
+    get:
+      tags:
+        - Transactions
+      summary: Get transaction by id
+      description: Retrieves the bank account transaction that matches the submitted unique identifier.
+      operationId: getTransactionById
+      parameters:
+        - $ref: '#/components/parameters/XDeviceIpHeader'
+        - $ref: '#/components/parameters/XSessionHeader'
+        - $ref: '#/components/parameters/XUserIdHeader'
+        - $ref: '#/components/parameters/TransactionId'
+      responses:
+        '200':
+          description: Transaction retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      tags:
+        - Transactions
+      summary: Update transaction status
+      description: Updates the transaction status. Use INACTIVE to deactivate a transaction.
+      operationId: updateTransactionStatus
+      parameters:
+        - $ref: '#/components/parameters/XDeviceIpHeader'
+        - $ref: '#/components/parameters/XSessionHeader'
+        - $ref: '#/components/parameters/XUserIdHeader'
+        - $ref: '#/components/parameters/TransactionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionStatusUpdateRequest'
+      responses:
+        '200':
+          description: Transaction status updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  parameters:
+    XDeviceIpHeader:
+      name: x-device-ip
+      in: header
+      required: true
+      description: Client device IP address.
+      schema:
+        type: string
+        minLength: 7
+        maxLength: 45
+        pattern: '^(((25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]{1,2})|([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4})$'
+        example: "192.168.1.10"
+    XSessionHeader:
+      name: x-session
+      in: header
+      required: true
+      description: Client session identifier.
+      schema:
+        type: string
+        minLength: 36
+        maxLength: 36
+        pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+        example: "7f2c1a54-4cf0-4d8c-9b18-2a6a57e7f7f3"
+    XUserIdHeader:
+      name: x-userid
+      in: header
+      required: true
+      description: Authenticated user identifier.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        example: 10
+    XPageHeader:
+      name: x-page
+      in: header
+      required: false
+      description: Page number to retrieve.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        default: 1
+        example: 1
+    XPageSizeHeader:
+      name: x-page-size
+      in: header
+      required: false
+      description: Maximum number of resources to retrieve per page.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 100
+        default: 20
+        example: 20
+    SearchQuery:
+      name: search
+      in: query
+      required: false
+      description: Search value used to find partial matches in the backend-defined searchable fields for this resource.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        example: "salary payment"
+    TransactionId:
+      name: id
+      in: path
+      required: true
+      description: Unique transaction identifier.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        example: 1
+    IdAccountQuery:
+      name: idAccount
+      in: query
+      required: false
+      description: Filters transactions by account.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        example: 5
+    ConceptQuery:
+      name: concept
+      in: query
+      required: false
+      description: Filters transactions by concept.
+      schema:
+        $ref: '#/components/schemas/ConceptTransaction'
+    StatusQuery:
+      name: status
+      in: query
+      required: false
+      description: Filters transactions by status.
+      schema:
+        $ref: '#/components/schemas/Status'
+
+  headers:
+    XTotalCount:
+      description: Total number of resources matching the submitted filters.
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+        example: 125
+    XPage:
+      description: Current page number returned in the response.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        example: 1
+    XPageSize:
+      description: Maximum number of resources returned per page.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 100
+        example: 20
+    XTotalPages:
+      description: Total number of pages available for the submitted filters.
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+        example: 7
+
+  responses:
+    BadRequest:
+      description: Invalid request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    MethodNotAllowed:
+      description: Method not allowed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalServerError:
+      description: Internal server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Status:
+      type: string
+      enum:
+        - ACTIVE
+        - INACTIVE
+      minLength: 6
+      maxLength: 8
+      example: ACTIVE
+
+    ConceptTransaction:
+      type: string
+      enum:
+        - DEBIT
+        - CREDIT
+      minLength: 5
+      maxLength: 6
+      example: CREDIT
+
+    TransactionCreateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        idAccount:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+          example: 5
+        amount:
+          type: number
+          multipleOf: 0.01
+          minimum: 0.01
+          maximum: 99999999999999999.99
+          nullable: true
+          example: 250.75
+        description:
+          type: string
+          maxLength: 255
+          default: ""
+          example: Salary payment
+        concept:
+          $ref: '#/components/schemas/ConceptTransaction'
+        status:
+          $ref: '#/components/schemas/Status'
+      required:
+        - idAccount
+        - amount
+        - concept
+
+    TransactionStatusUpdateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          $ref: '#/components/schemas/Status'
+      required:
+        - status
+
+    TransactionResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          format: int32
+          minimum: 1
+          readOnly: true
+          example: 1
+        idAccount:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+          example: 5
+        amount:
+          type: number
+          multipleOf: 0.01
+          minimum: 0.01
+          maximum: 99999999999999999.99
+          nullable: true
+          example: 250.75
+        description:
+          type: string
+          maxLength: 255
+          example: Salary payment
+        concept:
+          $ref: '#/components/schemas/ConceptTransaction'
+        status:
+          $ref: '#/components/schemas/Status'
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+          example: "2026-05-01T16:35:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+          example: "2026-05-01T16:40:00Z"
+      required:
+        - id
+        - amount
+        - description
+        - concept
+        - status
+
+    Error:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          minLength: 3
+          maxLength: 3
+          pattern: '^[0-9]{3}$'
+          example: "404"
+        message:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: Resource not found.
+        detail:
+          type: string
+          maxLength: 500
+          example: No information was found for the submitted request.
+      required:
+        - code
+        - message

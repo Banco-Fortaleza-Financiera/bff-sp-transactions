@@ -1,0 +1,157 @@
+plugins {
+    id 'java'
+    id 'jacoco'
+    id 'org.springframework.boot' version '3.3.5'
+    id 'io.spring.dependency-management' version '1.1.6'
+    id 'org.openapi.generator' version '7.8.0'
+}
+
+group = 'com.bancofortaleza'
+version = '0.0.1-SNAPSHOT'
+
+springBoot {
+    mainClass = 'com.bancofortaleza.transactions.TransactionsApplication'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+ext {
+    springCloudVersion = '2023.0.3'
+    lombokVersion = '1.18.34'
+    mapstructVersion = '1.6.3'
+    generatedOpenApiDir = layout.buildDirectory.dir('generated').get().asFile
+    generatedOpenApiJavaDir = "${generatedOpenApiDir}/src/main/java"
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+    implementation 'org.springframework.security:spring-security-crypto'
+    implementation 'io.github.openfeign:feign-okhttp'
+    implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.25'
+    implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+
+    runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'
+
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+    annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.mockito:mockito-junit-jupiter'
+    testImplementation 'org.assertj:assertj-core'
+    testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+sourceSets.main.java.srcDirs = ["src/main/java", "build/generated/src/main/java"]
+
+tasks.register('buildSpringServer', org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+   generatorName = "spring"
+       inputSpec = "$rootDir/src/main/resources/openapi.yaml".toString()
+       outputDir = "$buildDir/generated".toString()
+       apiPackage = "com.bff.services.server"
+       modelPackage = "com.bff.services.server.models"
+       library = "spring-boot"
+             configOptions = [
+                 useSpringBoot3                          : "true",
+                 useJakartaEe                            : "true",
+                 serializableModel                       : "true",
+                 dateLibrary                             : "java8",
+                 openApiNullable                         : "false",
+                 apiFirst                                : "false",
+                 delegatePattern                         : "true",
+                 configPackage                           : "com.bff.services.config",
+                 sourceFolder                            : "src/main/java",
+                 basePackage                             : "com.bff.services",
+                 disallowAdditionalPropertiesIfNotPresent: "true",
+                 interfaceOnly                           : "true",
+                 useBeanValidation                       : "true",
+                 generatedConstructorWithRequiredArgs    : "false",
+                 generateConstructorWithAllArgs          : "false",
+                 additionalModelTypeAnnotations          : "@lombok.AllArgsConstructor;@lombok.NoArgsConstructor;",
+                 springdocVersion                        : "2.8.10"
+     ]
+    doLast {
+        println 'Tarea buildSpringServer finalizada.'
+    }
+}
+
+compileJava {
+    dependsOn tasks.buildSpringServer
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+jacoco {
+    toolVersion = '0.8.12'
+}
+
+def jacocoExcludedClasses = [
+    '**/*Application.class',
+    '**/configuration/**',
+    '**/feign/**',
+    '**/generated/**',
+    '**/domain/exceptions/**'
+]
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+    classDirectories.setFrom(files(classDirectories.files.collect {
+        fileTree(dir: it, exclude: jacocoExcludedClasses)
+    }))
+}
+
+jacocoTestCoverageVerification {
+    dependsOn jacocoTestReport
+    classDirectories.setFrom(files(classDirectories.files.collect {
+        fileTree(dir: it, exclude: jacocoExcludedClasses)
+    }))
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.80
+            }
+        }
+    }
+}
+
+check {
+    dependsOn jacocoTestCoverageVerification
+}
+
+tasks.register('installGitHooks', Copy) {
+    from 'scripts/git-hooks/pre-commit'
+    into '.git/hooks'
+    fileMode = 0755
+    doFirst {
+        if (!file('.git/hooks').exists()) {
+            throw new GradleException('No existe .git/hooks. Inicializa el repositorio Git antes de instalar hooks.')
+        }
+    }
+}
