@@ -23,6 +23,12 @@ public class AccountEntity {
     @Column(name = "id")
     private Integer id;
 
+    @Column(name = "idUser", nullable = false)
+    private Integer idUser;
+
+    @Column(name = "accountNumber", nullable = false, length = 32)
+    private String accountNumber;
+
     @Column(name = "balance", nullable = false, precision = 19, scale = 2)
     private BigDecimal balance;
 

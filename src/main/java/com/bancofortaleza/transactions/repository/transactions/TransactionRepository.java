@@ -8,6 +8,9 @@ import com.bancofortaleza.transactions.utils.PaginationUtils;
 import com.bancofortaleza.transactions.utils.SpecificationUtils;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -56,6 +59,19 @@ public class TransactionRepository {
             date.plusDays(1).atStartOfDay()
         );
         return amount == null ? BigDecimal.ZERO : amount;
+    }
+
+    public List<TransactionEntity> findTransactionsByAccountsAndDateRange(
+        Collection<Integer> accountIds,
+        LocalDateTime startDate,
+        LocalDateTime endDate
+    ) {
+        return transactionJpaRepository
+            .findByAccountIdInAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAscIdAsc(
+                accountIds,
+                startDate,
+                endDate
+            );
     }
 
     @Transactional

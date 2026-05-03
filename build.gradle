@@ -40,6 +40,7 @@ dependencies {
     implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
     implementation 'io.swagger.core.v3:swagger-annotations:2.2.25'
     implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+    implementation 'com.github.librepdf:openpdf:2.4.0'
 
     runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'
 

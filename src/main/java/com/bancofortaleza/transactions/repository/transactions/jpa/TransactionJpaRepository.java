@@ -5,6 +5,8 @@ import com.bancofortaleza.transactions.repository.transactions.entity.Status;
 import com.bancofortaleza.transactions.repository.transactions.entity.TransactionEntity;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -28,5 +30,11 @@ public interface TransactionJpaRepository extends JpaRepository<TransactionEntit
         @Param("status") Status status,
         @Param("startDate") LocalDateTime startDate,
         @Param("endDate") LocalDateTime endDate
+    );
+
+    List<TransactionEntity> findByAccountIdInAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAscIdAsc(
+        Collection<Integer> accountIds,
+        LocalDateTime startDate,
+        LocalDateTime endDate
     );
 }
