@@ -12,7 +12,6 @@ RUN chmod +x gradlew
 RUN --mount=type=cache,target=/home/gradle/.gradle \
     ./gradlew dependencies --no-daemon
 
-COPY bff-openapi-sp-transaction.yaml ./
 COPY src ./src
 
 RUN --mount=type=cache,target=/home/gradle/.gradle \
