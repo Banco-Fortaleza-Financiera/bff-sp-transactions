@@ -1,0 +1,13 @@
+#!/bin/sh
+echo "Ejecutando pruebas antes del commit..."
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification
+
+RESULT=$?
+
+if [ $RESULT -ne 0 ]; then
+  echo "Commit cancelado: fallaron pruebas o cobertura."
+  exit 1
+fi
+
+echo "OK: pruebas exitosas"
+exit 0
